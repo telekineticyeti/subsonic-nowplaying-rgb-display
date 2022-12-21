@@ -1,0 +1,6 @@
+node_modules/
+testAssets/
+dist/
+notes/
+*.ppm
+.env

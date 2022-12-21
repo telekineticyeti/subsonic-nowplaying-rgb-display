@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist",
+    "sourceMap": false,
+    "declaration": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "target": "es6",
+    "downlevelIteration": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "noEmitOnError": true,
+    "noErrorTruncation": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "pretty": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "lib": ["es2015"],
+  "include": ["src/**/*.ts"]
+}

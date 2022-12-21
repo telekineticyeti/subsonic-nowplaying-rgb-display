@@ -1,0 +1,16 @@
+---
+version: '2'
+services:
+  lastfm-nowplaying-rgbdisplay:
+    build: https://github.com/telekineticyeti/lastfm-nowplaying-rgbdisplay
+    container_name: lastfm-nowplaying-rgbdisplay
+    restart: unless-stopped
+    environment:
+      - CLIENT_DEBUG=false # Optional - defaults to false. Set `true` to enable debug console output.
+      - POLLING_FREQUENCY_SECS=10 # Optional - defaults to 10 seconds.
+      - FLASCHEN_TASCHEN_HOST=my_ft_server_ip_or_hostname
+      - FLASCHEN_TASCHEN_PORT=1337 # Optional - defaults to 1337
+      - FLASCHEN_TASCHEN_WIDTH=64 # Optional - defaults to 32
+      - FLASCHEN_TASCHEN_HEIGHT=64 # Optional - defaults to 32
+      - LASTFM_USER=my_last_fm_username 
+      - LASTFM_APIKEY=my_last_fm_api_key
