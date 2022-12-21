@@ -1,6 +1,4 @@
-# LastFM Now Playing album art for Taschen Flaschen RGB Matrix display
-
-This is an app for retrieving the 'now playing' track from the LastFM API and displaying it on a Flaschen-Taschen RGB matrix display.
+This app retrieves the 'now playing' track for a user from the LastFM API and displays it to a Flaschen-Taschen RGB matrix display.
 
 # Configuration
 
@@ -39,7 +37,7 @@ This app can be launched using any of the following methods below.
 
 ## Docker-compose (recommended)
 
-Use the [`docker-compose.yaml` configuration](https://github.com/telekineticyeti/astfm-nowplaying-rgbdisplay/blob/master/docker-compose.yaml) provided in this repo to
+Use the [`docker-compose.yaml` configuration](https://github.com/telekineticyeti/lastfm-nowplaying-rgbdisplay/blob/master/docker-compose.yaml) provided in this repo to
 pull, build and deploy this app with docker-compose.
 
 ## Build and run with Docker
