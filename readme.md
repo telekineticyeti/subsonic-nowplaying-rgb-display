@@ -1,5 +1,8 @@
 This app retrieves the 'now playing' track for a user from the LastFM API and displays it to a Flaschen-Taschen RGB matrix display.
 
+![](./.github/rgb-display-prototype.webp)
+_RGB display in prototype case showing album art from LastFM API_
+
 # Configuration
 
 Configuration parameters are applied using environment variables. You can provide these as a `.env` file in the project folder, or as variables in docker (recommended).
@@ -78,3 +81,15 @@ npm run start
 # Run the deployment server
 npm run deploy
 ```
+
+# Known issues
+
+- For unknown reasons, the LastFM API will occasionally return a now playing track for an incorrect user, or claim that the user does not exist.
+  ```bash
+  Error [6]: User not found
+  ```
+- The LastFM API occasionally will return error code 8
+  ```bash
+  Error [8]: Operation failed - Most likely the backend service failed. Please try again.
+  ```
+  As this issue appears to be intermittent and usually resolves after the next API poll, the error throw in the `nowPlaying()` try-catch was removed so that the app does not exit.

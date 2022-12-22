@@ -28,7 +28,7 @@ async function updateNowPlaying() {
     // API response contained an error
     if (nowPlayingJson.error) {
       log(`Error [${nowPlayingJson.error}]: ${nowPlayingJson.message}`);
-      throw new Error(`Error [${nowPlayingJson.error}]: ${nowPlayingJson.message}`);
+      return;
     }
 
     const nowPlayingTrack = nowPlayingJson.recenttracks.track[0];
