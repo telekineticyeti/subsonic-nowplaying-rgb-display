@@ -1,9 +1,9 @@
 ---
 version: '2'
 services:
-  lastfm-nowplaying-rgbdisplay:
-    build: https://github.com/telekineticyeti/lastfm-nowplaying-rgbdisplay
-    container_name: lastfm-nowplaying-rgbdisplay
+  lastfm-nowplaying-rgb-display:
+    build: https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display
+    container_name: lastfm-nowplaying-rgb-display
     restart: unless-stopped
     environment:
       - CLIENT_DEBUG=false # Optional - defaults to false. Set `true` to enable debug console output.
