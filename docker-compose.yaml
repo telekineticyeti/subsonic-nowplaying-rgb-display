@@ -2,7 +2,7 @@
 version: '2'
 services:
   subsonic-nowplaying-rgb-display:
-    build: https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display
+    build: https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display.git
     container_name: subsonic-nowplaying-rgb-display
     restart: unless-stopped
     environment:
