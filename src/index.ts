@@ -68,7 +68,6 @@ async function updateNowPlaying() {
     // If the now-playing track scraped from lastFM exists in SubSonic tracks array, use the album art
     // from the match item.
     // Else, fallback to the album art from lastFM.
-    console.log(subsonicNowPlaying, lastFmNowPlaying.name, subsonicLatestTracks);
     if (subsonicNowPlaying) {
       image = await Subsonic.getCoverArt(
         subsonicNowPlaying.coverArt,
