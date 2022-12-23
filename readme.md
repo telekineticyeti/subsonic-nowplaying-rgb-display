@@ -1,6 +1,6 @@
-This app retrieves the 'now playing' track from your SubSonic API based music server, and displays it to a Flaschen-Taschen RGB matrix display.
+This app retrieves the 'now playing' track from your SubSonic API based music server, and displays it to a Flaschen-Taschen RGB matrix display. It should be compatible with any music server that implements Subsonic API compatibility, including Jellyfin, Airsonic and Navidrome.
 
-It also uses the LastFM API to aid in determining the Now Playing track ([see below](#why-use-the-lastfm-api-in-addition-to-subsonic-api)) for details.
+It also uses the LastFM API to aid in determining the Now Playing track ([see below](#why-use-the-lastfm-api-in-addition-to-subsonic-api) for details).
 
 If you would prefer a version of this app that uses LastFM only, [check this repo](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/).
 
