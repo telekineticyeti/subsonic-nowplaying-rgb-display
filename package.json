@@ -1,7 +1,7 @@
 {
-  "name": "lastfm-nowplaying-rgb-display",
+  "name": "subsonic-nowplaying-rgb-display",
   "version": "0.0.1",
-  "description": "LastFM Now Playing album art for Taschen Flaschen RGB Matrix display",
+  "description": "Subsonic Now Playing album art for Taschen Flaschen RGB Matrix display",
   "main": "./dist/index.js",
   "files": [
     "dist",
@@ -21,12 +21,13 @@
     "start": "nodemon -r dotenv/config --files src/index.ts --env-file ./.env",
     "deploy": "npm run build && node ./dist"
   },
-  "author": "https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display",
+  "author": "https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display",
   "license": "ISC",
   "dependencies": {
     "flaschen-taschen-node": "github:telekineticyeti/flaschen-taschen-node",
     "jimp": "^0.16.2",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "subsonic-api-wrapper": "github:telekineticyeti/subsonic-api-wrapper"
   },
   "devDependencies": {
     "@types/node": "^18.11.17",

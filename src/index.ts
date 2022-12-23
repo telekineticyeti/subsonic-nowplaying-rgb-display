@@ -1,8 +1,15 @@
 import {FlaschenTaschenClient} from 'flaschen-taschen-node';
+import SubsonicApiWrapper from 'subsonic-api-wrapper';
 import Jimp from 'jimp';
 import config from './config';
 import fetch from 'node-fetch';
 import util from 'util';
+
+const Subsonic = new SubsonicApiWrapper({
+  server: config.subsonic_host,
+  username: config.subsonic_user,
+  password: config.subsonic_pass,
+});
 
 // Create the FT client instance and prepare a new image that will be used to store the
 // now playing artwork.
@@ -22,8 +29,10 @@ function log(msg: any) {
 
 async function updateNowPlaying() {
   try {
-    const response = await fetch(config.lastFmNowPlayingUrl);
-    const nowPlayingJson = (await response.json()) as LastFm.NowPlaying;
+    const lastFmResponse = await fetch(config.lastFmNowPlayingUrl);
+    const nowPlayingJson = (await lastFmResponse.json()) as LastFm.NowPlaying;
+
+    const subsonicLatestTracks = await Subsonic.getNowPlaying();
 
     // API response contained an error
     if (nowPlayingJson.error) {
@@ -31,11 +40,18 @@ async function updateNowPlaying() {
       return;
     }
 
-    const nowPlayingTrack = nowPlayingJson.recenttracks.track[0];
+    // Identify the now playing track from LastFm
+    const lastFmNowPlaying = nowPlayingJson.recenttracks.track[0];
+
+    // Identify the now playing track from Subsonic, using the LastFM track as reference.
+    const subsonicNowPlaying = subsonicLatestTracks.find(
+      track => track.title === lastFmNowPlaying.name,
+    );
 
     if (
-      !nowPlayingTrack.hasOwnProperty('@attr') ||
-      nowPlayingTrack['@attr']?.nowplaying === 'false'
+      !lastFmNowPlaying.hasOwnProperty('@attr') ||
+      lastFmNowPlaying['@attr']?.nowplaying === 'false' ||
+      !subsonicLatestTracks.length
     ) {
       if (!sleep) {
         log('[Stopped] No currently playing tracks - Sleeping');
@@ -47,7 +63,7 @@ async function updateNowPlaying() {
       sleep = true;
 
       return;
-    } else if (nowPlayingTrack.name === mostRecentTrack) {
+    } else if (lastFmNowPlaying.name === mostRecentTrack) {
       // Currently playing track has not changed.
       // Re-broadcast the image to the FT-server.
       FTC.render(ftImage);
@@ -56,9 +72,23 @@ async function updateNowPlaying() {
 
     sleep = false;
 
-    const imageUrl = nowPlayingTrack.image.find(i => i.size === 'extralarge')?.['#text']!;
+    let image: Buffer;
+    let usedSubsonicAlbumart = false;
 
-    await Jimp.read(imageUrl).then(img => {
+    if (subsonicNowPlaying) {
+      image = await Subsonic.getCoverArt(
+        subsonicNowPlaying.coverArt,
+        config.subsonic_fetch_dimension,
+      );
+      usedSubsonicAlbumart = true;
+    } else {
+      const imageUrl = lastFmNowPlaying.image.find(i => i.size === 'extralarge')?.['#text']!;
+      const imageResponse = await fetch(imageUrl);
+      image = await imageResponse.buffer();
+      usedSubsonicAlbumart = false;
+    }
+
+    await Jimp.read(image).then(img => {
       img.scaleToFit(config.ft_width, Jimp.AUTO, Jimp.RESIZE_BEZIER).contrast(0.1);
 
       let w = img.getWidth(),
@@ -75,13 +105,15 @@ async function updateNowPlaying() {
       }
 
       log(
-        `[Updated] ${nowPlayingTrack.artist['#text']} - ${nowPlayingTrack.name} [${
-          nowPlayingTrack.album['#text']
+        `[Updated - ${usedSubsonicAlbumart ? 'Subsonic' : 'LastFM'}] ${
+          lastFmNowPlaying.artist['#text']
+        } - ${lastFmNowPlaying.name} [${
+          lastFmNowPlaying.album['#text']
         }] ${img.getWidth()}x${img.getHeight()} (${pixelCount} pixels)`,
       );
     });
 
-    mostRecentTrack = nowPlayingTrack.name;
+    mostRecentTrack = lastFmNowPlaying.name;
 
     // Send the image to the FT server
     FTC.render(ftImage);

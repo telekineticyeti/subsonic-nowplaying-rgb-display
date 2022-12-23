@@ -1,4 +1,8 @@
-This app retrieves the 'now playing' track for a user from the LastFM API and displays it to a Flaschen-Taschen RGB matrix display.
+This app retrieves the 'now playing' track from your SubSonic API based music server, and displays it to a Flaschen-Taschen RGB matrix display.
+
+It also uses the LastFM API to aid in determining the Now Playing track ([see below](#why-use-the-lastfm-api-in-addition-to-subsonic-api)) for details.
+
+If you would prefer a version of this app that uses LastFM only, [check this repo](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/).
 
 ![](./.github/rgb-display-prototype.webp)
 _Raspberry Pi zero 2 powered 64x64 RGB display in prototype case, showing album art from LastFM API_
@@ -12,23 +16,39 @@ The following is a list of variables and their default values:
 ```bash
 # Optional - defaults to false. Set `true` to enable debug console output.
 CLIENT_DEBUG=true
+
 # The frequency that the LastFM API is queried for updates.
 # Ideally this would be a lesser value than the `--layer-timeout` parameter value set on your Flaschen-Taschen server.
 # Optional - defaults to 10 seconds.
 POLLING_FREQUENCY_SECS=10
+
 # The host/ip address of your Flaschen-Taschen server
 FLASCHEN_TASCHEN_HOST=my_ft_server_ip_or_hostname
+
 # The port of your Flaschen-Taschen server
 # Optional - defaults to 1337
 FLASCHEN_TASCHEN_PORT=1337
+
 # The width of your Flaschen Taschen Display (or the width that you want the image to be)
 # Optional - defaults to 32
 FLASCHEN_TASCHEN_WIDTH=64
+
 # Image height
 # Optional - defaults to 32
 FLASCHEN_TASCHEN_HEIGHT=64
+
+# Subsonic Server host
+SUBSONIC_SERVER_HOST=your_subsonic_server_hostname
+
+# Subsonic Server username
+SUBSONIC_SERVER_USER=your_subsonic_server_username
+
+# Subsonic Server password
+SUBSONIC_SERVER_PASS=your_subsonic_server_password
+
 # The LastFM username to query for now playing
 LASTFM_USER=my_last_fm_username
+
 # Your API key for Last FM
 # https://www.last.fm/api/account/create
 LASTFM_APIKEY=my_last_fm_api_key
@@ -40,7 +60,7 @@ This app can be launched using any of the following methods below.
 
 ## Docker-compose (recommended)
 
-Use the [`docker-compose.yaml` configuration](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/blob/master/docker-compose.yaml) provided in this repo to
+Use the [`docker-compose.yaml` configuration](https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display/blob/master/docker-compose.yaml) provided in this repo to
 pull, build and deploy this app with docker-compose.
 
 ## Build and run with Docker
@@ -49,22 +69,25 @@ Configuration is provided via `-e` flags in docker create command.
 
 ```bash
 # Either clone the repo and build the image
-docker build . -t lastfm-nowplaying-rgb-display
+docker build . -t subsonic-nowplaying-rgb-display
 # Alternatively, build the image directly from this repo url
-docker build https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display
+docker build https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display
 
 # Create the container using the above image, with absolute minimal configuration
 # (32x32 display, 10 second API polling frequency - see configuration above)
 docker create \
- --name=lastfm-nowplaying \
+ --name=subsonic-nowplaying \
  -e FLASCHEN_TASCHEN_HOST=192.168.0.100 \
  -e LASTFM_USER=your-lastfm-user-name \
  -e LASTFM_APIKEY=your-lastfm-api-key \
+ -e SUBSONIC_SERVER_HOST=your-subsonic-server-hostname \
+ -e SUBSONIC_SERVER_USER=your-subsonic-server-username \
+ -e SUBSONIC_SERVER_PASS=your-subsonic-server-password \
  --restart unless-stopped \
- lastfm-nowplaying-rgb-display
+ subsonic-nowplaying-rgb-display
 
 # Start the container
-docker start lastfm-nowplaying
+docker start subsonic-nowplaying
 ```
 
 ## Build and run with NodeJS
@@ -97,11 +120,22 @@ These issues are intermittent and usually resolves after the next API poll. For 
 
 ---
 
+# Why use the LastFM API in addition to Subsonic API?
+
+Because determining what the 'now playing' track on Airsonic is, is not very straight forward! I ran into quite a few challenges determining what the actual 'now playing' track is due to a combination of the following:
+
+- The Airsonic implementation of [Subsonic API](http://www.subsonic.org/pages/api.jsp) will return a non-ordered array of 'recent tracks' instead of what is now actually playing. These tracks have a `minutesAgo` property that _could_ allow us to deduce which track is most recent, however...
+- my client of choice ([Sonixd](https://github.com/jeffvli/sonixd)) will download and cache two tracks in succession to support it's crossfading playback feature - The current track as well as the track that follows it. This results in two new item entries in the Subsonic API 'recent tracks' response, both of which have a `minutesAgo: 0` property. Since the array response is not ordered, so it is not possible to determine the actual currently playing track this way.
+
+## So why not just use LastFM only?
+
+It's certainly an option, and I made a LastFM-only version of this app [here](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/). However I found that a lot of album art for tracks in my library are missing from LastFM or incorrect. I have a meticulous degree of control over album art on my Airsonic instance, so I'd prefer to pull art from there first.
+
 # Additional Notes
 
-## flaschen-taschen-node
+## flaschen-taschen-node &
 
-This app uses my [flaschen-taschen-node](https://github.com/telekineticyeti/flaschen-taschen-node) library to construct and send images to an FT server. This is a WIP library and will be available by NPM as it matures. In the meantime, feel free to try it in your own projects!
+This app uses my [flaschen-taschen-node](https://github.com/telekineticyeti/flaschen-taschen-node) library to construct and send images to an FT server. It also uses my [subsonic-api-wrapper](https://github.com/telekineticyeti/subsonic-api-wrapper) library for interfacing with Subsonic-based APIs. These libraries are a work in progress and will be available by NPM as they mature. In the meantime, feel free to try them in your own projects!
 
 ## Hardware
 

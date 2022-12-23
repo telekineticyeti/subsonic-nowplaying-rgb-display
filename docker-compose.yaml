@@ -1,9 +1,9 @@
 ---
 version: '2'
 services:
-  lastfm-nowplaying-rgb-display:
-    build: https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display
-    container_name: lastfm-nowplaying-rgb-display
+  subsonic-nowplaying-rgb-display:
+    build: https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display
+    container_name: subsonic-nowplaying-rgb-display
     restart: unless-stopped
     environment:
       - CLIENT_DEBUG=false # Optional - defaults to false. Set `true` to enable debug console output.
@@ -14,3 +14,6 @@ services:
       - FLASCHEN_TASCHEN_HEIGHT=64 # Optional - defaults to 32
       - LASTFM_USER=my_last_fm_username 
       - LASTFM_APIKEY=my_last_fm_api_key
+      - SUBSONIC_SERVER_HOST=your_subsonic_server_hostname
+      - SUBSONIC_SERVER_USER=your_subsonic_server_username
+      - SUBSONIC_SERVER_PASS=your_subsonic_server_password
