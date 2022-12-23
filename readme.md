@@ -92,7 +92,8 @@ npm run deploy
   ```bash
   Error [8]: Operation failed - Most likely the backend service failed. Please try again.
   ```
-  This issue is intermittent and usually resolves after the next API poll. For this reason the error throw in the `nowPlaying()` try-catch was removed so that the app does not exit.
+
+These issues are intermittent and usually resolves after the next API poll. For this reason the error throw in the `nowPlaying()` try-catch was removed so that the app does not exit.
 
 ---
 
