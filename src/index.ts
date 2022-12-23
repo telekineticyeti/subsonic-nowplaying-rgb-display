@@ -15,24 +15,23 @@ const Subsonic = new SubsonicApiWrapper({
 // now playing artwork.
 const FTC = new FlaschenTaschenClient(config.ft_host);
 const ftImage = FTC.create({height: config.ft_width, width: config.ft_height});
+// A reference for the most recently played track, used for comparison in subsequent calls.
 let mostRecentTrack: string;
-let sleep = false;
-
-function log(msg: any) {
-  if (!config.debug) return;
-  if (typeof msg === 'object') {
-    console.debug(util.inspect(msg, false, 5, true));
-    return;
-  }
-  console.debug(msg);
-}
+// If isSleeping is true, no images are sent to the FT server.
+let isSleeping = false;
 
 async function updateNowPlaying() {
   try {
+    // Retrieve most recent tracks from Subsonic
+    const subsonicLatestTracks = await Subsonic.getNowPlaying();
+    if (!subsonicLatestTracks.length) {
+      sleep();
+      return;
+    }
+
+    // Retrieve LastFM now playing track
     const lastFmResponse = await fetch(config.lastFmNowPlayingUrl);
     const nowPlayingJson = (await lastFmResponse.json()) as LastFm.NowPlaying;
-
-    const subsonicLatestTracks = await Subsonic.getNowPlaying();
 
     // API response contained an error
     if (nowPlayingJson.error) {
@@ -43,25 +42,11 @@ async function updateNowPlaying() {
     // Identify the now playing track from LastFm
     const lastFmNowPlaying = nowPlayingJson.recenttracks.track[0];
 
-    // Identify the now playing track from Subsonic, using the LastFM track as reference.
-    const subsonicNowPlaying = subsonicLatestTracks.find(
-      track => track.title === lastFmNowPlaying.name,
-    );
-
     if (
       !lastFmNowPlaying.hasOwnProperty('@attr') ||
-      lastFmNowPlaying['@attr']?.nowplaying === 'false' ||
-      !subsonicLatestTracks.length
+      lastFmNowPlaying['@attr']?.nowplaying === 'false'
     ) {
-      if (!sleep) {
-        log('[Stopped] No currently playing tracks - Sleeping');
-        // Clear the display
-        ftImage.clear();
-        FTC.render(ftImage);
-      }
-
-      sleep = true;
-
+      sleep();
       return;
     } else if (lastFmNowPlaying.name === mostRecentTrack) {
       // Currently playing track has not changed.
@@ -70,11 +55,20 @@ async function updateNowPlaying() {
       return;
     }
 
-    sleep = false;
+    isSleeping = false;
 
     let image: Buffer;
     let usedSubsonicAlbumart = false;
 
+    // Identify the now playing track from Subsonic, using the LastFM track as reference.
+    const subsonicNowPlaying = subsonicLatestTracks.find(
+      track => track.title.toLowerCase() === lastFmNowPlaying.name.toLowerCase(),
+    );
+
+    // If the now-playing track scraped from lastFM exists in SubSonic tracks array, use the album art
+    // from the match item.
+    // Else, fallback to the album art from lastFM.
+    console.log(subsonicNowPlaying, lastFmNowPlaying.name, subsonicLatestTracks);
     if (subsonicNowPlaying) {
       image = await Subsonic.getCoverArt(
         subsonicNowPlaying.coverArt,
@@ -88,6 +82,7 @@ async function updateNowPlaying() {
       usedSubsonicAlbumart = false;
     }
 
+    // Read the image buffer and plot pixels to the FT image.
     await Jimp.read(image).then(img => {
       img.scaleToFit(config.ft_width, Jimp.AUTO, Jimp.RESIZE_BEZIER).contrast(0.1);
 
@@ -113,6 +108,8 @@ async function updateNowPlaying() {
       );
     });
 
+    // Set reference for the most recently played track. If this reference matches
+    // on next poll, we will re-send the same image instead of building it again.
     mostRecentTrack = lastFmNowPlaying.name;
 
     // Send the image to the FT server
@@ -120,6 +117,26 @@ async function updateNowPlaying() {
   } catch (error) {
     throw new Error(error as any);
   }
+}
+
+function log(msg: any) {
+  if (!config.debug) return;
+  if (typeof msg === 'object') {
+    console.debug(util.inspect(msg, false, 5, true));
+    return;
+  }
+  console.debug(msg);
+}
+
+function sleep() {
+  if (!isSleeping) {
+    log('[Stopped] No currently playing tracks - Sleeping');
+    // Clear the display
+    ftImage.clear();
+    FTC.render(ftImage);
+  }
+  isSleeping = true;
+  return;
 }
 
 /**
