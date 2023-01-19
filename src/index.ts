@@ -83,15 +83,22 @@ async function updateNowPlaying() {
 
     // Read the image buffer and plot pixels to the FT image.
     await Jimp.read(image).then(img => {
-      img.scaleToFit(config.ft_width, Jimp.AUTO, Jimp.RESIZE_BEZIER).contrast(0.1);
+      img
+        .cover(
+          config.ft_width,
+          config.ft_height,
+          Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE,
+        )
+        .contrast(0.1); // TODO - Add configuration of this to environment config.
 
-      let w = img.getWidth(),
-        h = img.getHeight();
+      // Update dimensions after scaling.
+      let width = img.getWidth();
+      let height = img.getHeight();
 
       let pixelCount = 0;
 
-      for (let x = 0; x < w; x++) {
-        for (let y = 0; y < h; y++) {
+      for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
           let pixi = Jimp.intToRGBA(img.getPixelColor(x, y));
           ftImage.plot(x, y, {r: pixi.r, g: pixi.g, b: pixi.b});
           pixelCount++;

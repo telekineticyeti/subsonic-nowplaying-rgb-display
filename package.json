@@ -1,6 +1,6 @@
 {
   "name": "subsonic-nowplaying-rgb-display",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Subsonic Now Playing album art for Taschen Flaschen RGB Matrix display",
   "main": "./dist/index.js",
   "files": [
