@@ -1,8 +1,8 @@
-This app retrieves the 'now playing' track from your SubSonic API based music server, and displays it to a Flaschen-Taschen RGB matrix display. It should be compatible with any music server that implements Subsonic API compatibility, including Jellyfin, Airsonic and Navidrome.
+This app retrieves the 'now playing' track from your SubSonic API based music server, and displays it to a Flaschen-Taschen RGB matrix display. It should be compatible with music servers that implement Subsonic API compatibility, including Jellyfin, Airsonic and Navidrome.
 
-It also uses the LastFM API to aid in determining the Now Playing track ([see below](#why-use-the-lastfm-api-in-addition-to-subsonic-api) for details).
+It can also use the LastFM API to cross-reference your now playing tracks to increase accuracy ([see below](#why-use-the-lastfm-api-in-addition-to-subsonic-api) for details).
 
-If you would prefer a version of this app that uses LastFM only, [check this repo](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/).
+If you would prefer a version of this app that queries LastFM only (and thus would be compatible with any music player that scrobbles, including [Spotify](https://community.spotify.com/t5/FAQs/How-can-I-connect-Spotify-to-Last-fm/ta-p/4795301)), [check this repo](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/).
 
 ![](./.github/rgb-display-prototype.webp)
 _Raspberry Pi zero 2 powered 64x64 RGB display in prototype case, showing album art from LastFM API_
@@ -46,13 +46,15 @@ SUBSONIC_SERVER_USER=your_subsonic_server_username
 # Subsonic Server password
 SUBSONIC_SERVER_PASS=your_subsonic_server_password
 
-# The LastFM username to query for now playing
+# OPTIONAL: The LastFM username to query for now playing
 LASTFM_USER=my_last_fm_username
 
-# Your API key for Last FM
+# OPTIONAL: Your API key for Last FM
 # https://www.last.fm/api/account/create
 LASTFM_APIKEY=my_last_fm_api_key
 ```
+
+Note that to enable LastFM queries, both `LASTFM_USER` and `LASTFM_APIKEY` must be defined.
 
 # Deployment
 
@@ -60,8 +62,7 @@ This app can be launched using any of the following methods below.
 
 ## Docker-compose (recommended)
 
-Use the [`docker-compose.yaml` configuration](https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display/blob/master/docker-compose.yaml) provided in this repo to
-pull, build and deploy this app with docker-compose.
+Use the [`docker-compose.yaml` configuration](https://github.com/telekineticyeti/subsonic-nowplaying-rgb-display/blob/master/docker-compose.yaml) provided in this repo to pull, build and deploy this app with docker-compose.
 
 ## Build and run with Docker
 
@@ -122,18 +123,23 @@ These issues are intermittent and usually resolves after the next API poll. For 
 
 # Why use the LastFM API in addition to Subsonic API?
 
-Because determining what the 'now playing' track on Airsonic is, is not very straight forward! I ran into quite a few challenges determining what the actual 'now playing' track is due to a combination of the following:
+Unfortunately, accurately determining the 'now playing' track on Airsonic is not as straight forward as one would think! I ran into several challenges determining what the actual 'now playing' track is due to a combination of the following:
 
-- The Airsonic implementation of [Subsonic API](http://www.subsonic.org/pages/api.jsp) will return a non-ordered array of 'recent tracks' instead of what is now actually playing. These tracks have a `minutesAgo` property that _could_ allow us to deduce which track is most recent, however...
+- The Airsonic/Airsonic Advanced implementations of [Subsonic API](http://www.subsonic.org/pages/api.jsp) will return a non-ordered array of 'recent tracks' instead of what is now actually playing. These tracks have a `minutesAgo` property that _could_ allow us to deduce which track is most recent, however...
+- Navidrome will return an ordered array of tracks, with the most recent track being the first item. This is more ideal than Airsonic's, approach, however tracks that are no longer playing will persist in the API response for up to 20 minutes after the track is no longer playing.
 - my client of choice ([Sonixd](https://github.com/jeffvli/sonixd)) will download and cache two tracks in succession to support it's crossfading playback feature - The current track as well as the track that follows it. This results in two new item entries in the Subsonic API 'recent tracks' response, both of which have a `minutesAgo: 0` property. Since the array response is not ordered, so it is not possible to determine the actual currently playing track this way.
 
 ## So why not just use LastFM only?
 
 It's certainly an option, and I made a LastFM-only version of this app [here](https://github.com/telekineticyeti/lastfm-nowplaying-rgb-display/). However I found that a lot of album art for tracks in my library are missing from LastFM or incorrect. I have a meticulous degree of control over album art on my Airsonic instance, so I'd prefer to pull art from there first.
 
+## But I can use this without LastFM?
+
+Yes, and for most cases this will be fine, but it's worth enabling if you run into any of the issues described above. This app is a work in progress, so any insight on improving the 'now playing' accuracy is also appreciated!
+
 # Additional Notes
 
-## flaschen-taschen-node &
+## flaschen-taschen-node
 
 This app uses my [flaschen-taschen-node](https://github.com/telekineticyeti/flaschen-taschen-node) library to construct and send images to an FT server. It also uses my [subsonic-api-wrapper](https://github.com/telekineticyeti/subsonic-api-wrapper) library for interfacing with Subsonic-based APIs. These libraries are a work in progress and will be available by NPM as they mature. In the meantime, feel free to try them in your own projects!
 

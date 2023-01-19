@@ -1,5 +1,5 @@
 import {FlaschenTaschenClient} from 'flaschen-taschen-node';
-import SubsonicApiWrapper from 'subsonic-api-wrapper';
+import SubsonicApiWrapper, {Subsonic} from 'subsonic-api-wrapper';
 import Jimp from 'jimp';
 import config from './config';
 import fetch from 'node-fetch';
@@ -28,31 +28,53 @@ async function updateNowPlaying() {
       sleep();
       return;
     }
+    // TODO additional logic required here to handle Navidrome vs. Airsonic
+    // Airsonic API is unordered which is why LastFM check may be required in
+    // the first place.
+    let subsonicNowPlaying = subsonicLatestTracks[0];
 
-    // Retrieve LastFM now playing track
-    const lastFmResponse = await fetch(config.lastFmNowPlayingUrl);
-    const nowPlayingJson = (await lastFmResponse.json()) as LastFm.NowPlaying;
+    let lastFmNowPlaying: LastFm.Track | undefined;
 
-    // API response contained an error
-    if (nowPlayingJson.error) {
-      log(`Error [${nowPlayingJson.error}]: ${nowPlayingJson.message}`);
-      return;
-    }
+    if (config.lastFmCheckEnabled) {
+      // Retrieve LastFM now playing track
+      const lastFmResponse = await fetch(config.lastFmNowPlayingUrl);
+      const nowPlayingJson = (await lastFmResponse.json()) as LastFm.NowPlaying;
 
-    // Identify the now playing track from LastFm
-    const lastFmNowPlaying = nowPlayingJson.recenttracks.track[0];
+      // API response contained an error
+      if (nowPlayingJson.error) {
+        log(`Error [${nowPlayingJson.error}]: ${nowPlayingJson.message}`);
+        return;
+      }
 
-    if (
-      !lastFmNowPlaying.hasOwnProperty('@attr') ||
-      lastFmNowPlaying['@attr']?.nowplaying === 'false'
-    ) {
-      sleep();
-      return;
-    } else if (lastFmNowPlaying.name === mostRecentTrack) {
-      // Currently playing track has not changed.
-      // Re-broadcast the image to the FT-server.
-      FTC.render(ftImage);
-      return;
+      // Identify the now playing track from LastFm
+      lastFmNowPlaying = nowPlayingJson.recenttracks.track[0];
+
+      if (
+        !lastFmNowPlaying.hasOwnProperty('@attr') ||
+        lastFmNowPlaying['@attr']?.nowplaying === 'false'
+      ) {
+        sleep();
+        return;
+      } else if (lastFmNowPlaying.name === mostRecentTrack) {
+        // Currently playing track has not changed.
+        // Re-broadcast the image to the FT-server.
+        FTC.render(ftImage);
+        return;
+      }
+    } else {
+      // Both Airsonic and Navidrome will persist `getNowPlaying` results for tracks
+      // which are no longer playing.
+      // If the duration of the song exceeds the `minutesAgo` value, it is assumed the
+      // Song is finished and `sleep()` should happen.
+      if (subsonicNowPlaying.minutesAgo * 60 > subsonicNowPlaying.duration + 5) {
+        sleep();
+        return;
+      } else if (subsonicNowPlaying.title === mostRecentTrack) {
+        // Currently playing track has not changed.
+        // Re-broadcast the image to the FT-server.
+        FTC.render(ftImage);
+        return;
+      }
     }
 
     isSleeping = false;
@@ -60,27 +82,25 @@ async function updateNowPlaying() {
     let image: Buffer;
     let usedSubsonicAlbumart = false;
 
-    // Identify the now playing track from Subsonic, using the LastFM track as reference.
-    const subsonicNowPlaying = subsonicLatestTracks.find(
-      track => track.title.toLowerCase() === lastFmNowPlaying.name.toLowerCase(),
-    );
+    // Cross reference the `getNowPlaying` response from Subsonic with the LastFM `nowPlaying`
+    // response, and return either a matching result, or fallback to the originally defined value.
+    if (config.lastFmCheckEnabled && lastFmNowPlaying) {
+      subsonicNowPlaying =
+        subsonicLatestTracks.find(
+          track => track.title.toLowerCase() === lastFmNowPlaying?.name.toLowerCase(),
+        ) || subsonicNowPlaying;
+    }
 
     // If the now-playing track scraped from lastFM exists in SubSonic tracks array, use the album art
     // from the match item.
     // Else, fallback to the album art from lastFM.
-    if (subsonicNowPlaying) {
-      image = await Subsonic.getCoverArt(
-        subsonicNowPlaying.coverArt,
-        config.subsonic_fetch_dimension,
-      );
-      usedSubsonicAlbumart = true;
-    } else {
-      const imageUrl = lastFmNowPlaying.image.find(i => i.size === 'extralarge')?.['#text']!;
-      const imageResponse = await fetch(imageUrl);
-      image = await imageResponse.buffer();
-      usedSubsonicAlbumart = false;
-    }
+    image = await Subsonic.getCoverArt(
+      subsonicNowPlaying!.coverArt,
+      config.subsonic_fetch_dimension,
+    );
+    usedSubsonicAlbumart = true;
 
+    // TODO: fallback image?
     // Read the image buffer and plot pixels to the FT image.
     await Jimp.read(image).then(img => {
       img
@@ -89,7 +109,8 @@ async function updateNowPlaying() {
           config.ft_height,
           Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE,
         )
-        .contrast(0.1); // TODO - Add configuration of this to environment config.
+        // TODO - Add configuration of this to environment config.
+        .contrast(0.1);
 
       // Update dimensions after scaling.
       let width = img.getWidth();
@@ -107,16 +128,16 @@ async function updateNowPlaying() {
 
       log(
         `[Updated - ${usedSubsonicAlbumart ? 'Subsonic' : 'LastFM'}] ${
-          lastFmNowPlaying.artist['#text']
-        } - ${lastFmNowPlaying.name} [${
-          lastFmNowPlaying.album['#text']
+          subsonicNowPlaying.artist
+        } - ${subsonicNowPlaying.title} [${
+          subsonicNowPlaying.album
         }] ${img.getWidth()}x${img.getHeight()} (${pixelCount} pixels)`,
       );
     });
 
     // Set reference for the most recently played track. If this reference matches
     // on next poll, we will re-send the same image instead of building it again.
-    mostRecentTrack = lastFmNowPlaying.name;
+    mostRecentTrack = subsonicNowPlaying.title;
 
     // Send the image to the FT server
     FTC.render(ftImage);

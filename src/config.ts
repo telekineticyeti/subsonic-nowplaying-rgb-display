@@ -6,11 +6,17 @@ if (!process.env.FLASCHEN_TASCHEN_HOST) {
   !process.env.SUBSONIC_SERVER_PASS
 ) {
   throw new Error('Missing Subsonic credentials.');
-} else if (!process.env.LASTFM_USER || !process.env.LASTFM_APIKEY) {
-  throw new Error('Missing LastFM credentials.');
 }
 
-const lastFmNowPlayingUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${process.env.LASTFM_USER}&api_key=${process.env.LASTFM_APIKEY}&format=json&limit=1`;
+let lastFmCheckEnabled = false;
+let lastFmNowPlayingUrl = '';
+
+if (process.env.LASTFM_USER && process.env.LASTFM_APIKEY) {
+  lastFmCheckEnabled = true;
+  lastFmNowPlayingUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${process.env.LASTFM_USER}&api_key=${process.env.LASTFM_APIKEY}&format=json&limit=1`;
+} else {
+  console.debug('LastFM credentials missing or incomplete - skipping LastFM checks.');
+}
 
 // The port that this server will operate on.
 const port =
@@ -75,6 +81,7 @@ const config = {
   subsonic_user,
   poll_frequency,
   subsonic_fetch_dimension,
+  lastFmCheckEnabled,
   lastFmNowPlayingUrl,
 };
 
