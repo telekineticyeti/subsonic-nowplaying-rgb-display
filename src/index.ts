@@ -14,7 +14,11 @@ const Subsonic = new SubsonicApiWrapper({
 // Create the FT client instance and prepare a new image that will be used to store the
 // now playing artwork.
 const FTC = new FlaschenTaschenClient(config.ft_host);
-const ftImage = FTC.create({height: config.ft_width, width: config.ft_height});
+const ftImage = FTC.create({
+  height: config.ft_width,
+  width: config.ft_height,
+  layer: config.ft_layer,
+});
 // A reference for the most recently played track, used for comparison in subsequent calls.
 let mostRecentTrack: string;
 // If isSleeping is true, no images are sent to the FT server.

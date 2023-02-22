@@ -48,6 +48,12 @@ const ft_height =
     ? parseInt(process.env.FLASCHEN_TASCHEN_HEIGHT)
     : 32;
 
+// Flaschen Taschen Server layer to render on. - default 1
+const ft_layer =
+  process.env.FLASCHEN_TASCHEN_LAYER && !isNaN(parseInt(process.env.FLASCHEN_TASCHEN_LAYER))
+    ? parseInt(process.env.FLASCHEN_TASCHEN_LAYER)
+    : 1;
+
 // Subsonic server details.
 const subsonic_host = process.env.SUBSONIC_SERVER_HOST;
 const subsonic_user = process.env.SUBSONIC_SERVER_USER;
@@ -76,6 +82,7 @@ const config = {
   ft_port,
   ft_width,
   ft_height,
+  ft_layer,
   subsonic_host,
   subsonic_pass,
   subsonic_user,
